@@ -1,6 +1,6 @@
 # Bağlam Tabanlı Yazım Denetiminde BERT ve GPT Modellerinin Karşılaştırması
 
-Bu projede, yanlış bağlamda kullandığımız kelimelerden ve doğrularından oluşan bir veri kümesi hazırlayıp bu veriler üzerinde BERT ve GPT modellerinin hatalı kelimeleri düzeltip doğru cümledeki haline ne kadar iyi getirebildiğini farklı metrikler üzerinden karşılaştırmasını yapacağız.
+Bu projede, kelimeleri yanlış ve doğru bağlamlarda kullanarak bir veri kümesi hazırlayıp bu veriler üzerinde BERT ve GPT modellerinin hatalı kelimeleri düzeltip doğru cümlelerdeki hallerine ne kadar iyi getirebildiklerinin farklı metrikler üzerinden karşılaştırmasını yapacağız.
 
 ### Gerekli Kütüphaneler
 
