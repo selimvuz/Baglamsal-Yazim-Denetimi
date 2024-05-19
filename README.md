@@ -12,7 +12,7 @@ pip install pandas transformers torch
 
 ### Veri Kümesi
 
-Türkçe'de bağlamsal yazım denetimi için yeterince açık kaynak bulunmadığından kendimiz hazırlamak istedik. Örneklere **dataset** klasöründen ulaşabilirsiniz.
+Türkçe'de bağlamsal yazım denetimi için yeterince açık kaynak veri kümesi bulunmadığından kendimiz hazırlamak istedik. Örneklere **dataset** klasöründen ulaşabilirsiniz.
 
 | Veriler |                    Hatalı Cümle                    |                    Doğru Cümle                     |
 | :-----: | :------------------------------------------------: | :------------------------------------------------: |
