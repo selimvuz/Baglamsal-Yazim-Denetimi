@@ -1,6 +1,7 @@
 import pandas as pd
 from transformers import BertTokenizer, BertForMaskedLM
 import torch
+import torch.nn.functional as F
 
 # Veri kümesini yükle
 data = pd.read_csv('dataset/baglamsal.csv')
@@ -36,9 +37,15 @@ def mask_and_predict(sentence, mask_index, top_k=5):
         logits = outputs.logits
 
     mask_token_logits = logits[0, mask_token_index, :]
-    top_k_tokens = torch.topk(mask_token_logits, top_k, dim=1).indices[0].tolist()
+    top_k_logits = torch.topk(mask_token_logits, top_k, dim=1)
 
-    return [tokenizer.decode([token]).strip() for token in top_k_tokens]
+    top_k_tokens = top_k_logits.indices[0].tolist()
+    top_k_scores = top_k_logits.values[0].tolist()
+
+    # Softmax uygulayarak olasılıkları hesapla
+    probabilities = F.softmax(mask_token_logits, dim=-1)[0, top_k_tokens].tolist()
+
+    return [(tokenizer.decode([token]).strip(), score, prob) for token, score, prob in zip(top_k_tokens, top_k_scores, probabilities)]
 
 def calculate_metrics(data, top_k=5):
     reciprocal_ranks = []
@@ -53,11 +60,12 @@ def calculate_metrics(data, top_k=5):
         mask_index, correct_word, wrong_word = find_difference(row['hatali_cumle'], row['dogru_cumle'])
         if mask_index is not None and correct_word is not None:
             predictions = mask_and_predict(row['hatali_cumle'], mask_index, top_k)
-            if correct_word.lower() in predictions:
-                rank = predictions.index(correct_word.lower()) + 1
+            predicted_words = [word for word, score, prob in predictions]
+            if correct_word.lower() in predicted_words:
+                rank = predicted_words.index(correct_word.lower()) + 1
                 reciprocal_ranks.append(1 / rank)
                 correct_predictions += 1
-                if predictions[0].lower() == correct_word.lower():  # İlk tahminin doğruluğunu kontrol etme
+                if predicted_words[0].lower() == correct_word.lower():  # İlk tahminin doğruluğunu kontrol et
                     first_prediction_correct += 1
                 true_positive += 1
             else:
@@ -66,7 +74,8 @@ def calculate_metrics(data, top_k=5):
                 false_negative += 1
             total_predictions += 1
             # Her veri için çıktıyı yazdır
-            print(f"Hatalı Kelime: {wrong_word}, Doğru Kelime: {correct_word}, Modelin Tahminleri: {predictions}, Rank: {1 / rank if correct_word.lower() in predictions else 0}")
+            predictions_str = ", ".join([f"{word} (logit: {score:.4f}, prob: {prob:.4f})" for word, score, prob in predictions])
+            print(f"Hatalı Kelime: {wrong_word}, Doğru Kelime: {correct_word}, Modelin Tahminleri: {predictions_str}, Rank: {1 / rank if correct_word.lower() in predicted_words else 0}")
         else:
             print(f"Hatalı Kelime: {wrong_word}, Doğru Kelime: {correct_word}, Modelin Tahminleri: None")
 
@@ -77,13 +86,15 @@ def calculate_metrics(data, top_k=5):
     f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
     return mrr, accuracy, precision, recall, f1
 
-# MRR, doğruluk, precision, recall ve F1 hesapla
-mrr, accuracy, precision, recall, f1 = calculate_metrics(data, top_k=50)
+# MRR, doğruluk ve precision hesapla
+mrr, accuracy, precision, recall, f1 = calculate_metrics(data, top_k=5)
 
 # Pandas ayarlarını değiştir (Konsola verinin tamamını yazsın)
 pd.set_option('display.max_colwidth', None)
 
-# MRR, doğruluk, precision, recall ve F1 yazdır (Yüzdesel olarak)
+# Sonuçları yazdır (Yüzdesel olarak)
 print(f"Genel Doğruluk (MRR): {mrr}")
 print(f"Genel Doğruluk (Accuracy): {accuracy * 100:.2f}%")
 print(f"Genel Doğruluk (Precision): {precision * 100:.2f}%")
+print(f"Genel Doğruluk (Recall): {recall * 100:.2f}%")
+print(f"Genel Doğruluk (F1): {f1 * 100:.2f}%")

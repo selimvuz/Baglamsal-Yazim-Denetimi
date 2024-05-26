@@ -33,7 +33,7 @@ def mask_and_predict(sentence, mask_index, top_k=5):
         return []
 
     inputs = tokenizer.encode(masked_sentence, return_tensors='pt')
-    
+
     if inputs.size(1) == 0:  # Giriş boyutunu kontrol et
         return []
 
@@ -41,8 +41,10 @@ def mask_and_predict(sentence, mask_index, top_k=5):
         outputs = model(inputs)
         predictions = outputs.logits
 
-    predicted_indices = torch.topk(predictions[0, -1, :], top_k).indices.tolist()
-    predicted_tokens = [tokenizer.decode([idx]).strip() for idx in predicted_indices]
+    predicted_indices = torch.topk(
+        predictions[0, -1, :], top_k).indices.tolist()
+    predicted_tokens = [tokenizer.decode(
+        [idx]).strip() for idx in predicted_indices]
 
     return predicted_tokens
 
@@ -56,15 +58,18 @@ def calculate_metrics(data, top_k=5):
     false_negative = 0
 
     for idx, row in data.iterrows():
-        mask_index, correct_word, wrong_word = find_difference(row['hatali_cumle'], row['dogru_cumle'])
+        mask_index, correct_word, wrong_word = find_difference(
+            row['hatali_cumle'], row['dogru_cumle'])
         if mask_index is not None and correct_word is not None:
-            predictions = mask_and_predict(row['hatali_cumle'], mask_index, top_k)
+            predictions = mask_and_predict(
+                row['hatali_cumle'], mask_index, top_k)
             if predictions:
                 if correct_word.lower() in predictions:
                     rank = predictions.index(correct_word.lower()) + 1
                     reciprocal_ranks.append(1 / rank)
                     correct_predictions += 1
-                    if predictions[0].lower() == correct_word.lower():  # İlk tahminin doğruluğunu kontrol etme
+                    # İlk tahminin doğruluğunu kontrol et
+                    if predictions[0].lower() == correct_word.lower():
                         first_prediction_correct += 1
                     true_positive += 1
                 else:
@@ -73,24 +78,31 @@ def calculate_metrics(data, top_k=5):
                     false_negative += 1
             total_predictions += 1
             # Her veri için çıktıyı yazdır
-            print(f"Hatalı Kelime: {wrong_word}, Doğru Kelime: {correct_word}, Modelin Tahminleri: {predictions}, Rank: {1 / rank if correct_word.lower() in predictions else 0}")
+            print(
+                f"Hatalı Kelime: {wrong_word}, Doğru Kelime: {correct_word}, Modelin Tahminleri: {predictions}, Rank: {1 / rank if correct_word.lower() in predictions else 0}")
         else:
-            print(f"Hatalı Kelime: {wrong_word}, Doğru Kelime: {correct_word}, Modelin Tahminleri: None")
+            print(
+                f"Hatalı Kelime: {wrong_word}, Doğru Kelime: {correct_word}, Modelin Tahminleri: None")
 
-    mrr = sum(reciprocal_ranks) / len(reciprocal_ranks) if reciprocal_ranks else 0
-    accuracy = first_prediction_correct / total_predictions if total_predictions > 0 else 0
-    precision = true_positive / (true_positive + false_positive) if (true_positive + false_positive) > 0 else 0
-    recall = true_positive / (true_positive + false_negative) if (true_positive + false_negative) > 0 else 0
-    f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+    mrr = sum(reciprocal_ranks) / \
+        len(reciprocal_ranks) if reciprocal_ranks else 0
+    accuracy = first_prediction_correct / \
+        total_predictions if total_predictions > 0 else 0
+    precision = true_positive / \
+        (true_positive + false_positive) if (true_positive + false_positive) > 0 else 0
+    recall = true_positive / \
+        (true_positive + false_negative) if (true_positive + false_negative) > 0 else 0
+    f1 = 2 * (precision * recall) / (precision +
+                                     recall) if (precision + recall) > 0 else 0
     return mrr, accuracy, precision, recall, f1
 
-# MRR, doğruluk, precision, recall ve F1 hesapla
+# MRR, doğruluk ve precision hesapla
 mrr, accuracy, precision, recall, f1 = calculate_metrics(data, top_k=5)
 
 # Pandas ayarlarını değiştir (Konsola verinin tamamını yazsın)
 pd.set_option('display.max_colwidth', None)
 
-# MRR, doğruluk, precision, recall ve F1 yazdır (Yüzdesel olarak)
+# Sonuçları yazdır (Yüzdesel olarak)
 print(f"Genel Doğruluk (MRR): {mrr}")
 print(f"Genel Doğruluk (Accuracy): {accuracy * 100:.2f}%")
 print(f"Genel Doğruluk (Precision): {precision * 100:.2f}%")
